@@ -5,7 +5,7 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description='Creates a photomosaic from input images')
 parser.add_argument('--target', dest='target', required=True, help="Image to create mosaic from")
-parser.add_argument('--images', dest='images', required=True, help="Diectory of images")
+parser.add_argument('--images', dest='images', required=True, help="Directory of images")
 parser.add_argument('--grid', nargs=2, dest='grid', required=True, help="Size of photo mosaic")
 parser.add_argument('--output', dest='output', required=False)
 
@@ -73,8 +73,8 @@ def create_image_grid(images, dims):
     return (grid_img)
 
 
-def create_photomosaic(target_image, input_images, grid_size,
-                       reuse_images=True):
+def create_mosaic_photo(target_image, input_images, grid_size,
+                        reuse_images=True):
     target_images = split_image(target_image, grid_size)
 
     output_images = []
@@ -153,7 +153,7 @@ if resize_input:
         img.thumbnail(dims)
 
 # create photomosaic
-mosaic_image = create_photomosaic(target_image, input_images, grid_size, reuse_images)
+mosaic_image = create_mosaic_photo(target_image, input_images, grid_size, reuse_images)
 
 # write out mosaic
 mosaic_image.save(output_filename, 'jpeg')
