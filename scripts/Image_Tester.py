@@ -5,12 +5,13 @@ from PIL import Image
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Checks background images for correct number of channels')
-parser.add_argument('--images', dest='images', required=True, help="Diectory of images")
+parser.add_argument('--images', dest='images', required=True, help="Directory of images")
 
 args = parser.parse_args()
 
 moveme = []
-## This tests to make sure the dimensions of all the photos are the same
+
+# This tests to make sure the dimensions of all the photos are the same
 for filename in os.listdir(args.images):
     path = args.images + filename
     try:

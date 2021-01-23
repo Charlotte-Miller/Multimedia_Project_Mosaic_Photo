@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, random, argparse
+import os, random
 from PIL import Image
 import numpy as np
 
@@ -93,52 +93,57 @@ def create_mosaic_photo(target_image, input_images, grid_size,
             input_images.remove(match_index)
 
     mosaic_image = create_image_grid(output_images, grid_size)
-    return (mosaic_image)
+
+    return mosaic_image
 
 
-### ---------------------------------------------
+# =======================================================================================
 
 
-target_image = Image.open('../data/AirJordan.jpg')
+if __name__ == '__main__':
+    target_image = Image.open(
+        f"""../data/{input('Enter target image name inside folder data (with the extension): ')}""")
 
-# material images
-print('reading input folder...')
-materials = get_material_images_directory('../data/Dior/')
-# input_images = get_images(args.images)
+    # material images
+    print('reading input folder...')
+    materials = get_material_images_directory(
+        f"""../data/{input('Enter the folder name of your material images: ')}/""")
+    # input_images = get_images(args.images)
 
-# check if any valid input images found
-if not materials:
-    print('No input images found in %s. Exiting.' % ('../data/Dior/',))
-    exit()
-
-# shuffle list - to get a more varied output?
-random.shuffle(materials)
-
-# size of grid
-grid_size = (200, 200)
-
-# output
-output_filename = 'mosaic.jpeg'
-# if args.output:
-#     output_filename = args.output
-
-# re-use any image in input
-reuse_images = True
-
-# resize the input to fit original image size?
-resize_input = True
-
-print('starting mosaic photo generator...')
-
-# if images can't be reused, ensure m*n <= num_of_images
-if not reuse_images:
-    if grid_size[0] * grid_size[1] > len(materials):
-        print('grid size less than number of images')
+    # check if any valid input images found
+    if not materials:
+        print('No input images found in %s. Exiting.' % ('../data/Dior/',))
         exit()
 
-# resizing input
-if resize_input:
-    print('resizing images...')
+    # shuffle list - to get a more varied output?
+    random.shuffle(materials)
+
+    # size of grid
+    size = int(input('Enter the grid size: '))
+    grid_size = (size, size)
+
+    # output
+    output_filename = 'mosaic.jpeg'
+    # if args.output:
+    #     output_filename = args.output
+
+    # re-use any image in input
+    reuse_images = True
+
+    # resize the input to fit original image size?
+    resize_input = True
+
+    print('starting mosaic photo generator...')
+
+    # if images can't be reused, ensure m*n <= num_of_images
+    if not reuse_images:
+        if grid_size[0] * grid_size[1] > len(materials):
+            print('grid size less than number of images')
+            exit()
+
+    # resizing input
+    if resize_input:
+        print('resizing images...')
     # for given grid size, compute max dims w,h of tiles
     dims = (int(target_image.size[0] / grid_size[1]),
             int(target_image.size[1] / grid_size[0]))
@@ -147,11 +152,11 @@ if resize_input:
     for img in materials:
         img.thumbnail(dims)
 
-# create mosaic photo
-mosaic_image = create_mosaic_photo(target_image, materials, grid_size, reuse_images)
+    # create mosaic photo
+    mosaic_image = create_mosaic_photo(target_image, materials, grid_size, reuse_images)
 
-# write out mosaic
-mosaic_image.save(output_filename, 'jpeg')
+    # write out mosaic
+    mosaic_image.save(output_filename, 'jpeg')
 
-print("saved output to %s" % (output_filename,))
-print('done.')
+    print("saved output to %s" % (output_filename,))
+    print('done.')
