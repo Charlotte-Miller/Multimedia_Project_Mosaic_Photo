@@ -3,29 +3,23 @@ import os, random, argparse
 from PIL import Image
 import numpy as np
 
-parser = argparse.ArgumentParser(description='Creates a photomosaic from input images')
-parser.add_argument('--target', dest='target', required=True, help="Image to create mosaic from")
-parser.add_argument('--images', dest='images', required=True, help="Directory of images")
-parser.add_argument('--grid', nargs=2, dest='grid', required=True, help="Size of photo mosaic")
-parser.add_argument('--output', dest='output', required=False)
 
-args = parser.parse_args()
+def get_material_images_directory(materials_directory):
+    files = os.listdir(materials_directory)
+    materials = []
 
-
-def get_images(images_directory):
-    files = os.listdir(images_directory)
-    images = []
     for file in files:
-        file_path = os.path.abspath(os.path.join(images_directory, file))
+        file_path = os.path.abspath(os.path.join(materials_directory, file))
         try:
             fp = open(file_path, "rb")
             im = Image.open(fp)
-            images.append(im)
+            materials.append(im)
             im.load()
             fp.close()
         except:
             print("Invalid image: %s" % (file_path,))
-    return (images)
+
+    return materials
 
 
 def get_average_rgb(image):
@@ -105,27 +99,28 @@ def create_mosaic_photo(target_image, input_images, grid_size,
 ### ---------------------------------------------
 
 
-target_image = Image.open(args.target)
+target_image = Image.open('../data/AirJordan.jpg')
 
-# input images
+# material images
 print('reading input folder...')
-input_images = get_images(args.images)
+materials = get_material_images_directory('../data/Dior/')
+# input_images = get_images(args.images)
 
 # check if any valid input images found
-if input_images == []:
-    print('No input images found in %s. Exiting.' % (args.images,))
+if not materials:
+    print('No input images found in %s. Exiting.' % ('../data/Dior/',))
     exit()
 
 # shuffle list - to get a more varied output?
-random.shuffle(input_images)
+random.shuffle(materials)
 
 # size of grid
-grid_size = (int(args.grid[0]), int(args.grid[1]))
+grid_size = (200, 200)
 
 # output
 output_filename = 'mosaic.jpeg'
-if args.output:
-    output_filename = args.output
+# if args.output:
+#     output_filename = args.output
 
 # re-use any image in input
 reuse_images = True
@@ -133,11 +128,11 @@ reuse_images = True
 # resize the input to fit original image size?
 resize_input = True
 
-print('starting photomosaic creation...')
+print('starting mosaic photo generator...')
 
 # if images can't be reused, ensure m*n <= num_of_images
 if not reuse_images:
-    if grid_size[0] * grid_size[1] > len(input_images):
+    if grid_size[0] * grid_size[1] > len(materials):
         print('grid size less than number of images')
         exit()
 
@@ -149,11 +144,11 @@ if resize_input:
             int(target_image.size[1] / grid_size[0]))
     print("max tile dims: %s" % (dims,))
     # resize
-    for img in input_images:
+    for img in materials:
         img.thumbnail(dims)
 
-# create photomosaic
-mosaic_image = create_mosaic_photo(target_image, input_images, grid_size, reuse_images)
+# create mosaic photo
+mosaic_image = create_mosaic_photo(target_image, materials, grid_size, reuse_images)
 
 # write out mosaic
 mosaic_image.save(output_filename, 'jpeg')
