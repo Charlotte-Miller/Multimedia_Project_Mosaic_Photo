@@ -21,13 +21,6 @@ def get_tiles_from(tiles_directory, color_mode='RGB'):
         tile.load()
         tile_path.close()
 
-    print('Checking tile directory...')
-
-    # check if any valid input images found
-    if not tiles:
-        print('No image found in %s. Exiting.' % (tiles_directory,))
-        exit()
-
     return tiles
 
 
@@ -88,11 +81,9 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     tiles = get_tiles_from(tiles_path, color_mode)
 
-    for tile in tiles:
-        try:
-            avgs.append(get_average_rgb(tile))
-        except ValueError:
-            continue
+    print('Checking tile directory...')
+
+    # check if any valid input images found
 
     random.shuffle(tiles)
 
@@ -106,8 +97,8 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
         if grid_size[0] * grid_size[1] > len(tiles):
             print(
                 f"""Can\' create mosaic photo without using duplicated tile
-                (Grid size less than number of total tile images)
-                Exiting.""")
+                    (Grid size less than number of total tile images)
+                    Exiting.""")
             exit()
 
     # resizing input
@@ -121,6 +112,16 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
         # resize
         for img in tiles:
             img.thumbnail(dims)
+
+    if not tiles:
+        print('No image found in %s. Exiting.' % (tiles_path,))
+        exit()
+
+    for tile in tiles:
+        try:
+            avgs.append(get_average_rgb(tile))
+        except ValueError:
+            continue
 
     for tile in target_images:
         average_rgb = get_average_rgb(tile)
@@ -138,9 +139,15 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
     return mosaic_image
 
 
-def generate_mosaic_photo(target_image, tiles, grid_size, duplicated_tile=True, color_mode='L',
+def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicated_tile=True, color_mode='RGB',
                           output_filename='Result.jpg'):
-    mosaic_image = create_mosaic_photo(target_image, tiles, grid_size, duplicated_tile, color_mode)
+    original_image = Image.open(target_image)
+
+    width, height = original_image.size
+
+    scaled_image = original_image.resize((math.floor(width * scale), math.floor(height * scale)))
+
+    mosaic_image = create_mosaic_photo(scaled_image, tiles_path, grid_size, duplicated_tile, color_mode)
 
     # Write image out
     mosaic_image.save(output_filename, 'jpeg')
@@ -151,17 +158,11 @@ def generate_mosaic_photo(target_image, tiles, grid_size, duplicated_tile=True, 
 
 # =======================================================================================
 
-
 if __name__ == '__main__':
-    original_image = Image.open('../data/Sample.jpg')
-    width, height = original_image.size
-    scale = 3
-
-    target_image = original_image.resize((math.floor(width * scale), math.floor(height * scale)))
-
-    tile_path = '../data/Dior/'
-    size = 100
-
-    grid_size = (size, size)
-
-    generate_mosaic_photo(target_image, tile_path, grid_size, duplicated_tile=True, color_mode='L')
+    generate_mosaic_photo(target_image='../data/Tree.jpg',
+                          tiles_path='../data/Trees/',
+                          output_filename='Result.jpg',
+                          scale=10,
+                          grid_size=(100, 100),
+                          duplicated_tile=True,
+                          color_mode='RGB')
