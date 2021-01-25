@@ -162,56 +162,6 @@ if __name__ == '__main__':
     tile_path = '../data/Dior/'
     size = 100
 
-    # target_image = Image.open(
-    #     f"""../data/{input('Enter target image name inside folder data (with the extension): ')}""")
-
-    # # material images
-    # print('reading input folder...')
-    # # materials = get_material_images_directory(
-    # #     f"""../data/{input('Enter the folder name of your material images: ')}/""")
-    # # input_images = get_images(args.images)
-    #
-    # # check if any valid input images found
-    # if not tiles:
-    #     print('No input images found in %s. Exiting.' % ('../data/Dior/',))
-    #     exit()
-
-    # shuffle list - to get a more varied output?
-    # random.shuffle(tiles)
-
-    # size of grid
-    # size = int(input('Enter the grid size: '))
     grid_size = (size, size)
 
-    # output
-    # output_filename = 'mosaic.jpeg'
-    # if args.output:
-    #     output_filename = args.output
-
-    # # re-use any image in input
-    # reuse_images = True
-    #
-    # # resize the input to fit original image size?
-    # resize_input = True
-    #
-    # print('Start creating mosaic photo...')
-    #
-    # # if images can't be reused, ensure m*n <= num_of_images
-    # if not reuse_images:
-    #     if grid_size[0] * grid_size[1] > len(tiles):
-    #         print('grid size less than number of images')
-    #         exit()
-    #
-    # # resizing input
-    # if resize_input:
-    #     print('resizing images...')
-    # # for given grid size, compute max dims w,h of tiles
-    # dims = (int(target_image.size[0] / grid_size[1]),
-    #         int(target_image.size[1] / grid_size[0]))
-    # print("max tile dims: %s" % (dims,))
-    # # resize
-    # for img in tiles:
-    #     img.thumbnail(dims)
-
-    # create mosaic photo
     generate_mosaic_photo(target_image, tile_path, grid_size, duplicated_tile=True, color_mode='L')
