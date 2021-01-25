@@ -1,31 +1,40 @@
-#!/usr/bin/env python
-import os, random
+import math
+import os
+import random
+
+import numpy
 from PIL import Image
-import numpy as np
 
 
-def get_material_images_directory(materials_directory):
-    files = os.listdir(materials_directory)
-    materials = []
+def get_tiles_from(tiles_directory, color_mode='RGB'):
+    # convert_tile_extension_to_jpg(tiles_directory)
+
+    files = os.listdir(tiles_directory)
+    tiles = []
 
     for file in files:
-        file_path = os.path.abspath(os.path.join(materials_directory, file))
-        try:
-            fp = open(file_path, "rb")
-            im = Image.open(fp)
-            materials.append(im)
-            im.load()
-            fp.close()
-        except:
-            print("Invalid image: %s" % (file_path,))
+        file_path = os.path.abspath(os.path.join(tiles_directory, file))
+        tile_path = open(file_path, "rb")
+        tile = Image.open(tile_path).convert(color_mode)
 
-    return materials
+        tiles.append(tile)
+        tile.load()
+        tile_path.close()
+
+    print('Checking tile directory...')
+
+    # check if any valid input images found
+    if not tiles:
+        print('No image found in %s. Exiting.' % (tiles_directory,))
+        exit()
+
+    return tiles
 
 
 def get_average_rgb(image):
-    im = np.array(image)
+    im = numpy.array(image)
     w, h, d = im.shape
-    return tuple(np.average(im.reshape(w * h, d), axis=0))
+    return tuple(numpy.average(im.reshape(w * h, d), axis=0))
 
 
 def split_image(image, size):
@@ -67,96 +76,142 @@ def create_image_grid(images, dims):
     return (grid_img)
 
 
-def create_mosaic_photo(target_image, input_images, grid_size,
-                        reuse_images=True):
+def create_mosaic_photo(target_image, tiles_path, grid_size,
+                        duplicated_tile=True, color_mode='RGB'):
     target_images = split_image(target_image, grid_size)
 
     output_images = []
     count = 0
     batch_size = int(len(target_images) / 10)
+
     avgs = []
-    for img in input_images:
+
+    tiles = get_tiles_from(tiles_path, color_mode)
+
+    for tile in tiles:
         try:
-            avgs.append(get_average_rgb(img))
+            avgs.append(get_average_rgb(tile))
         except ValueError:
             continue
 
-    for img in target_images:
-        avg = get_average_rgb(img)
-        match_index = get_best_match_index(avg, avgs)
-        output_images.append(input_images[match_index])
+    random.shuffle(tiles)
+
+    # resize the input to fit original image size?
+    resize_input = True
+
+    print('Start creating mosaic photo...')
+
+    # if images can't be reused, ensure m*n <= num_of_images
+    if not duplicated_tile:
+        if grid_size[0] * grid_size[1] > len(tiles):
+            print(
+                f"""Can\' create mosaic photo without using duplicated tile
+                (Grid size less than number of total tile images)
+                Exiting.""")
+            exit()
+
+    # resizing input
+    if resize_input:
+        print('resizing images...')
+        # for given grid size, compute max dims w,h of tiles
+        dims = (int(target_image.size[0] / grid_size[1]),
+                int(target_image.size[1] / grid_size[0]))
+        print("max tile dims: %s" % (dims,))
+
+        # resize
+        for img in tiles:
+            img.thumbnail(dims)
+
+    for tile in target_images:
+        average_rgb = get_average_rgb(tile)
+        match_index = get_best_match_index(average_rgb, avgs)
+        output_images.append(tiles[match_index])
         if count > 0 and batch_size > 10 and count % batch_size is 0:
             print('processed %d of %d...' % (count, len(target_images)))
         count += 1
         # remove selected image from input if flag set
-        if not reuse_images:
-            input_images.remove(match_index)
+        if not duplicated_tile:
+            tiles.remove(match_index)
 
     mosaic_image = create_image_grid(output_images, grid_size)
 
     return mosaic_image
 
 
+def generate_mosaic_photo(target_image, tiles, grid_size, duplicated_tile=True, color_mode='L',
+                          output_filename='Result.jpg'):
+    mosaic_image = create_mosaic_photo(target_image, tiles, grid_size, duplicated_tile, color_mode)
+
+    # Write image out
+    mosaic_image.save(output_filename, 'jpeg')
+
+    print("Saving output to %s" % (output_filename,))
+    print('Finished.')
+
+
 # =======================================================================================
 
 
 if __name__ == '__main__':
-    target_image = Image.open(
-        f"""../data/{input('Enter target image name inside folder data (with the extension): ')}""")
+    original_image = Image.open('../data/Sample.jpg')
+    width, height = original_image.size
+    scale = 3
 
-    # material images
-    print('reading input folder...')
-    materials = get_material_images_directory(
-        f"""../data/{input('Enter the folder name of your material images: ')}/""")
-    # input_images = get_images(args.images)
+    target_image = original_image.resize((math.floor(width * scale), math.floor(height * scale)))
 
-    # check if any valid input images found
-    if not materials:
-        print('No input images found in %s. Exiting.' % ('../data/Dior/',))
-        exit()
+    tile_path = '../data/Dior/'
+    size = 100
+
+    # target_image = Image.open(
+    #     f"""../data/{input('Enter target image name inside folder data (with the extension): ')}""")
+
+    # # material images
+    # print('reading input folder...')
+    # # materials = get_material_images_directory(
+    # #     f"""../data/{input('Enter the folder name of your material images: ')}/""")
+    # # input_images = get_images(args.images)
+    #
+    # # check if any valid input images found
+    # if not tiles:
+    #     print('No input images found in %s. Exiting.' % ('../data/Dior/',))
+    #     exit()
 
     # shuffle list - to get a more varied output?
-    random.shuffle(materials)
+    # random.shuffle(tiles)
 
     # size of grid
-    size = int(input('Enter the grid size: '))
+    # size = int(input('Enter the grid size: '))
     grid_size = (size, size)
 
     # output
-    output_filename = 'mosaic.jpeg'
+    # output_filename = 'mosaic.jpeg'
     # if args.output:
     #     output_filename = args.output
 
-    # re-use any image in input
-    reuse_images = True
-
-    # resize the input to fit original image size?
-    resize_input = True
-
-    print('starting mosaic photo generator...')
-
-    # if images can't be reused, ensure m*n <= num_of_images
-    if not reuse_images:
-        if grid_size[0] * grid_size[1] > len(materials):
-            print('grid size less than number of images')
-            exit()
-
-    # resizing input
-    if resize_input:
-        print('resizing images...')
-    # for given grid size, compute max dims w,h of tiles
-    dims = (int(target_image.size[0] / grid_size[1]),
-            int(target_image.size[1] / grid_size[0]))
-    print("max tile dims: %s" % (dims,))
-    # resize
-    for img in materials:
-        img.thumbnail(dims)
+    # # re-use any image in input
+    # reuse_images = True
+    #
+    # # resize the input to fit original image size?
+    # resize_input = True
+    #
+    # print('Start creating mosaic photo...')
+    #
+    # # if images can't be reused, ensure m*n <= num_of_images
+    # if not reuse_images:
+    #     if grid_size[0] * grid_size[1] > len(tiles):
+    #         print('grid size less than number of images')
+    #         exit()
+    #
+    # # resizing input
+    # if resize_input:
+    #     print('resizing images...')
+    # # for given grid size, compute max dims w,h of tiles
+    # dims = (int(target_image.size[0] / grid_size[1]),
+    #         int(target_image.size[1] / grid_size[0]))
+    # print("max tile dims: %s" % (dims,))
+    # # resize
+    # for img in tiles:
+    #     img.thumbnail(dims)
 
     # create mosaic photo
-    mosaic_image = create_mosaic_photo(target_image, materials, grid_size, reuse_images)
-
-    # write out mosaic
-    mosaic_image.save(output_filename, 'jpeg')
-
-    print("saved output to %s" % (output_filename,))
-    print('done.')
+    generate_mosaic_photo(target_image, tile_path, grid_size, duplicated_tile=True, color_mode='L')
