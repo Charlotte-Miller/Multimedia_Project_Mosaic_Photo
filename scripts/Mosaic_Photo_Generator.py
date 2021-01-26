@@ -3,7 +3,13 @@ import os
 import random
 
 import numpy
-from PIL import Image
+from PIL import Image, ImageEnhance
+
+
+def adjust_image_brightness(image, factor):
+    # image brightness enhancer
+    enhancer = ImageEnhance.Brightness(image)
+    return enhancer.enhance(factor)
 
 
 def get_tiles_from(tiles_directory, color_mode='RGB'):
@@ -17,6 +23,8 @@ def get_tiles_from(tiles_directory, color_mode='RGB'):
         tile_path = open(file_path, "rb")
         tile = Image.open(tile_path).convert(color_mode)
 
+        tile = adjust_image_brightness(image=tile, factor=1)
+
         tiles.append(tile)
         tile.load()
         tile_path.close()
@@ -25,59 +33,74 @@ def get_tiles_from(tiles_directory, color_mode='RGB'):
 
 
 def get_average_rgb(image):
-    im = numpy.array(image)
-    w, h, d = im.shape
-    return tuple(numpy.average(im.reshape(w * h, d), axis=0))
+    numpy_image = numpy.array(image)
+    h, w, d = numpy_image.shape
+    reshaped_array = numpy_image.reshape(w * h, d)
+    return tuple(reshaped_array.mean(axis=0))
 
 
+# Split target image by base on gird size
 def split_image(image, size):
-    W, H = image.size[0], image.size[1]
-    m, n = size
-    w, h = int(W / n), int(H / m)
-    imgs = []
-    for j in range(m):
-        for i in range(n):
-            imgs.append(image.crop((i * w, j * h, (i + 1) * w, (j + 1) * h)))
-    return (imgs)
+    target_image_width, target_image_height = image.size[0], image.size[1]
+    grid_height, grid_width = size
+
+    split_image_width, split_image_height = int(target_image_width / grid_width), int(target_image_height / grid_height)
+
+    split_images = []
+
+    for i in range(grid_width):
+        for j in range(grid_height):
+            split_images.append(image.crop((j * split_image_width, i * split_image_height, (j + 1) * split_image_width,
+                                            (i + 1) * split_image_height)))
+
+    return split_images
 
 
-def get_best_match_index(input_avg, avgs):
-    avg = input_avg
+def get_best_match_index(checked_average_rgb, total_average_rgb):
+    checked_rgb = checked_average_rgb
     index = 0
     min_index = 0
-    min_dist = float("inf")
-    for val in avgs:
-        dist = ((val[0] - avg[0]) * (val[0] - avg[0]) +
-                (val[1] - avg[1]) * (val[1] - avg[1]) +
-                (val[2] - avg[2]) * (val[2] - avg[2]))
-        if dist < min_dist:
+    min_dist = float("inf")  # infinite value
+
+    for average_rgb in total_average_rgb:
+        dist = ((average_rgb[0] - checked_rgb[0]) ** 2 +
+                (average_rgb[1] - checked_rgb[1]) ** 2 +
+                (average_rgb[2] - checked_rgb[2]) ** 2)
+
+        if dist < min_dist:  # First value of 'min_dist' is infinite => initial value of 'dist' will be approved
             min_dist = dist
             min_index = index
+
         index += 1
+
     return min_index
 
 
-def create_image_grid(images, dims):
-    m, n = dims
-    width = max([img.size[0] for img in images])
-    height = max([img.size[1] for img in images])
-    grid_img = Image.new('RGB', (n * width, m * height))
-    for index in range(len(images)):
-        row = int(index / n)
-        col = index - n * row
-        grid_img.paste(images[index], (col * width, row * height))
-    return (grid_img)
+def create_image_grid(matched_tiles, grid_size):
+    grid_height, grid_width = grid_size
+
+    max_matched_tile_width = max([img.size[0] for img in matched_tiles])
+    max_matched_tile_height = max([img.size[1] for img in matched_tiles])
+
+    grid_img = Image.new('RGB', (grid_width * max_matched_tile_width, grid_height * max_matched_tile_height))
+
+    for index in range(len(matched_tiles)):
+        row = int(index / grid_width)
+        col = index - grid_width * row
+        grid_img.paste(matched_tiles[index], (col * max_matched_tile_width, row * max_matched_tile_height))
+
+    return grid_img
 
 
 def create_mosaic_photo(target_image, tiles_path, grid_size,
                         duplicated_tile=True, color_mode='RGB'):
-    target_images = split_image(target_image, grid_size)
+    split_target_images = split_image(target_image, grid_size)
 
     output_images = []
     count = 0
-    batch_size = int(len(target_images) / 10)
+    batch_size = int(len(split_target_images) / 10)
 
-    avgs = []
+    all_tile_average_rgb = []
 
     tiles = get_tiles_from(tiles_path, color_mode)
 
@@ -119,17 +142,20 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     for tile in tiles:
         try:
-            avgs.append(get_average_rgb(tile))
+            all_tile_average_rgb.append(get_average_rgb(tile))
         except ValueError:
             continue
 
-    for tile in target_images:
-        average_rgb = get_average_rgb(tile)
-        match_index = get_best_match_index(average_rgb, avgs)
+    for current_image in split_target_images:
+        average_rgb = get_average_rgb(current_image)
+        match_index = get_best_match_index(average_rgb, all_tile_average_rgb)
         output_images.append(tiles[match_index])
+
         if count > 0 and batch_size > 10 and count % batch_size is 0:
-            print('processed %d of %d...' % (count, len(target_images)))
+            print('processed %d of %d...' % (count, len(split_target_images)))
+
         count += 1
+
         # remove selected image from input if flag set
         if not duplicated_tile:
             tiles.remove(match_index)
@@ -159,10 +185,10 @@ def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicat
 # =======================================================================================
 
 if __name__ == '__main__':
-    generate_mosaic_photo(target_image='../data/Tree.jpg',
-                          tiles_path='../data/Trees/',
+    generate_mosaic_photo(target_image='../data/Sample.jpg',
+                          tiles_path='../data/Face/',
                           output_filename='Result.jpg',
-                          scale=10,
-                          grid_size=(100, 100),
+                          scale=5,
+                          grid_size=(150, 150),
                           duplicated_tile=True,
                           color_mode='RGB')

@@ -1,12 +1,16 @@
 import os
 
 
-def convert_tile_extension_to_jpg(collection):
+def convert_tile_extension_to_jpg(directory_path):
     os.getcwd()
-    path = collection + '/'
+    path = directory_path + '/'
 
-    for i, filename in enumerate(os.listdir(collection)):
+    for i, filename in enumerate(os.listdir(directory_path)):
         try:
             os.rename(path + filename, path + str(i) + ".jpg")
         except FileExistsError:
-            pass
+            continue
+
+
+if __name__ == '__main__':
+    convert_tile_extension_to_jpg('F:\Python\Photo_Mosaic\data\Face')
