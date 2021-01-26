@@ -100,7 +100,7 @@ def create_image_grid(matched_tiles, grid_size):
 
 
 def create_mosaic_photo(target_image, tiles_path, grid_size,
-                        duplicated_tile=True, color_mode='RGB'):
+                        duplicated_tile=True, color_mode='RGB', resize_allowed=True):
     split_target_images = split_image(target_image, grid_size)
 
     output_images = []
@@ -117,12 +117,9 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     random.shuffle(tiles)
 
-    # resize the input to fit original image size?
-    resize_input = True
-
     print('Start creating mosaic photo...')
 
-    # if images can't be reused, ensure m*n <= num_of_images
+    # If don't allow to duplicate tile, ensure: grid_height x grid_width <= tile quantity
     if not duplicated_tile:
         if grid_size[0] * grid_size[1] > len(tiles):
             print(
@@ -131,17 +128,9 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
                     Exiting.""")
             exit()
 
-    # resizing input
-    if resize_input:
-        print('resizing images...')
-        # for given grid size, compute max dims w,h of tiles
-        dims = (int(target_image.size[0] / grid_size[1]),
-                int(target_image.size[1] / grid_size[0]))
-        print("max tile dims: %s" % (dims,))
-
-        # resize
-        for img in tiles:
-            img.thumbnail(dims)
+    # Resize tile if allowed
+    if resize_allowed:
+        resize(tiles, target_image, grid_size)
 
     if not tiles:
         print('No image found in %s. Exiting.' % (tiles_path,))
@@ -171,6 +160,17 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
     mosaic_image = create_image_grid(output_images, grid_size)
 
     return mosaic_image
+
+
+def resize(tiles, target_image, grid_size):
+    print('resizing images...')
+    # for given grid size, compute max dims w,h of tiles
+    dims = (int(target_image.size[0] / grid_size[1]),
+            int(target_image.size[1] / grid_size[0]))
+    print("max tile dims: %s" % (dims,))
+    # resize
+    for img in tiles:
+        img.thumbnail(dims)
 
 
 def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicated_tile=True, color_mode='RGB',
