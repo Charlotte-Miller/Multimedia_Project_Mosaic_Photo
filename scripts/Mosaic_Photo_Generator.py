@@ -109,33 +109,35 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     all_tile_average_rgb = []
 
+    print('Start importing tiles from', tiles_path)
+
     tiles = get_tiles_from(tiles_path, color_mode)
 
-    print('Checking tile directory...')
-
-    # check if any valid input images found
+    # Check for empty tile directory
+    if not tiles:
+        print('No image found in %s. Exiting.' % (tiles_path,))
+        exit()
 
     random.shuffle(tiles)
-
-    print('Start creating mosaic photo...')
 
     # If don't allow to duplicate tile, ensure: grid_height x grid_width <= tile quantity
     if not duplicated_tile:
         if grid_size[0] * grid_size[1] > len(tiles):
             print(
                 f"""Can\' create mosaic photo without using duplicated tile
-                    (Grid size less than number of total tile images)
-                    Exiting.""")
+                        (Grid size less than number of total tile images)
+                        Exiting.""")
             exit()
+
+    print(f"""Finish importing tiles. There is a total of {len(tiles)} tiles.""")
+
+    print('Start creating mosaic photo...')
 
     # Resize tile if allowed
     if resize_allowed:
         resize(tiles, target_image, grid_size)
 
-    if not tiles:
-        print('No image found in %s. Exiting.' % (tiles_path,))
-        exit()
-
+    # Get average color of all tiles
     for tile in tiles:
         try:
             all_tile_average_rgb.append(get_average_rgb(tile))
