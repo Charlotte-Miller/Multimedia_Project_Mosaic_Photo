@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import imagehash
 
 import numpy
 from PIL import Image, ImageEnhance
@@ -67,7 +68,7 @@ def get_best_match_index(checked_average_rgb, total_average_rgb):
                 (average_rgb[1] - checked_rgb[1]) ** 2 +
                 (average_rgb[2] - checked_rgb[2]) ** 2)
 
-        if dist < min_dist:  # First value of 'min_dist' is infinite => initial value of 'dist' will be approved
+        if dist < min_dist:  # First value of 'min_dist' is infinite => initial value of 'dist' will always be approved
             min_dist = dist
             min_index = index
 
@@ -79,17 +80,23 @@ def get_best_match_index(checked_average_rgb, total_average_rgb):
 def create_image_grid(matched_tiles, grid_size):
     grid_height, grid_width = grid_size
 
-    max_matched_tile_width = max([img.size[0] for img in matched_tiles])
-    max_matched_tile_height = max([img.size[1] for img in matched_tiles])
+    matched_tile_max_width = max(
+        [img.size[0] for img in matched_tiles])  # Get the largest tile width among matched tiles
+    matched_tile_max_height = max(
+        [img.size[1] for img in matched_tiles])  # Get the largest tile height among matched tiles
 
-    grid_img = Image.new('RGB', (grid_width * max_matched_tile_width, grid_height * max_matched_tile_height))
+    # Create a blank photo has the size base on grid_size and matched_tile size
+    generated_mosaic_photo = Image.new('RGB',
+                                       (grid_width * matched_tile_max_width, grid_height * matched_tile_max_height))
+    tile_index = 0
 
-    for index in range(len(matched_tiles)):
-        row = int(index / grid_width)
-        col = index - grid_width * row
-        grid_img.paste(matched_tiles[index], (col * max_matched_tile_width, row * max_matched_tile_height))
+    for row in range(grid_height):
+        for col in range(grid_width):
+            generated_mosaic_photo.paste(matched_tiles[tile_index],
+                                         (col * matched_tile_max_width, row * matched_tile_max_height))
+            tile_index += 1
 
-    return grid_img
+    return generated_mosaic_photo
 
 
 def create_mosaic_photo(target_image, tiles_path, grid_size,
@@ -149,6 +156,7 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
     for current_image in split_target_images:
         average_rgb = get_average_rgb(current_image)
         match_index = get_best_match_index(average_rgb, all_tile_average_rgb)
+
         output_images.append(tiles[match_index])
 
         if count > 0 and batch_size > 10 and count % batch_size is 0:
@@ -182,13 +190,13 @@ def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicat
     print('Finished.')
 
 
-# =======================================================================================
+# ======================================================================================================================
 
 if __name__ == '__main__':
     generate_mosaic_photo(target_image='../data/Sample.jpg',
                           tiles_path='../data/Face/',
                           output_filename='Result.jpg',
                           scale=5,
-                          grid_size=(150, 150),
+                          grid_size=(100, 100),
                           duplicated_tile=True,
                           color_mode='RGB')
