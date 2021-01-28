@@ -49,3 +49,6 @@ Explain:
 - color_mode: 'RGB' for colorful, 'L' for grayscale
 
 3. Execute Mosaic_Photo_Generator.py
+
+## Reuslt
+![alt text](https://github.com/Charlotte-Miller/Multimedia_Project_Mosaic_Photo/blob/master/scripts/Result.jpg?raw=true)
