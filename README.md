@@ -5,7 +5,8 @@ The program is made to generate a mosaic photo base on bunches of tile image. (s
 Briefly, it uses average RGB color of each tiles image, compare to the average RGB of each split image (from original image). After that, put all the matched tile in a list then start creating a photo base on these matched images.
 
 ## Installation
-Python version: 3.8.5
+Python version: 3.8.7
+pip version: 21.0
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
 
