@@ -6,7 +6,8 @@ Briefly, it uses average RGB color of each tiles image, compare to the average R
 
 ## Installation
 Python version: 3.8.7
-pip version: 21.0
+
+PIP version: 21.0
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
 
