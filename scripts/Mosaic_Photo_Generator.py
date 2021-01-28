@@ -1,7 +1,6 @@
 import math
 import os
 import random
-import imagehash
 
 import numpy
 from PIL import Image, ImageEnhance
@@ -13,7 +12,7 @@ def adjust_image_brightness(image, factor):
     return enhancer.enhance(factor)
 
 
-def get_tiles_from(tiles_directory, color_mode='RGB'):
+def get_tiles_from(tiles_directory):
     # convert_tile_extension_to_jpg(tiles_directory)
 
     files = os.listdir(tiles_directory)
@@ -22,9 +21,7 @@ def get_tiles_from(tiles_directory, color_mode='RGB'):
     for file in files:
         file_path = os.path.abspath(os.path.join(tiles_directory, file))
         tile_path = open(file_path, "rb")
-        tile = Image.open(tile_path).convert(color_mode)
-
-        tile = adjust_image_brightness(image=tile, factor=1)
+        tile = Image.open(tile_path).convert('RGB')
 
         tiles.append(tile)
         tile.load()
@@ -100,10 +97,10 @@ def create_image_grid(matched_tiles, grid_size):
 
 
 def create_mosaic_photo(target_image, tiles_path, grid_size,
-                        duplicated_tile=True, color_mode='RGB', resize_allowed=True):
+                        duplicated_tile=True, resize_allowed=True):
     split_target_images = split_image(target_image, grid_size)
 
-    output_images = []
+    matched_tiles = []
     count = 0
     batch_size = int(len(split_target_images) / 10)
 
@@ -111,7 +108,7 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     print('Start importing tiles from', tiles_path)
 
-    tiles = get_tiles_from(tiles_path, color_mode)
+    tiles = get_tiles_from(tiles_path)
 
     # Check for empty tile directory
     if not tiles:
@@ -135,7 +132,7 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
 
     # Resize tile if allowed
     if resize_allowed:
-        resize(tiles, target_image, grid_size)
+        resize_all_tiles(tiles, target_image, grid_size)
 
     # Get average color of all tiles
     for tile in tiles:
@@ -148,31 +145,32 @@ def create_mosaic_photo(target_image, tiles_path, grid_size,
         average_rgb = get_average_rgb(current_image)
         match_index = get_best_match_index(average_rgb, all_tile_average_rgb)
 
-        output_images.append(tiles[match_index])
+        matched_tiles.append(tiles[match_index])
 
         if count > 0 and batch_size > 10 and count % batch_size is 0:
-            print('processed %d of %d...' % (count, len(split_target_images)))
+            print(f"""Processed {count} of {len(split_target_images)}""")
 
         count += 1
 
-        # remove selected image from input if flag set
+        # Remove selected image from input if flag set
         if not duplicated_tile:
             tiles.remove(match_index)
 
-    mosaic_image = create_image_grid(output_images, grid_size)
+    mosaic_image = create_image_grid(matched_tiles, grid_size)
 
     return mosaic_image
 
 
-def resize(tiles, target_image, grid_size):
-    print('resizing images...')
-    # for given grid size, compute max dims w,h of tiles
-    dims = (int(target_image.size[0] / grid_size[1]),
-            int(target_image.size[1] / grid_size[0]))
-    print("max tile dims: %s" % (dims,))
+def resize_all_tiles(tiles, target_image, grid_size):
+    print('Resizing tiles...')
+
+    # For given grid size, compute max dims w,h of tiles
+    new_size = (int(target_image.size[0] / grid_size[1]),
+                int(target_image.size[1] / grid_size[0]))
+
     # resize
-    for img in tiles:
-        img.thumbnail(dims)
+    for tile in tiles:
+        tile.thumbnail(new_size)
 
 
 def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicated_tile=True, color_mode='RGB',
@@ -183,7 +181,7 @@ def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicat
 
     scaled_image = original_image.resize((math.floor(width * scale), math.floor(height * scale)))
 
-    mosaic_image = create_mosaic_photo(scaled_image, tiles_path, grid_size, duplicated_tile, color_mode)
+    mosaic_image = create_mosaic_photo(scaled_image, tiles_path, grid_size, duplicated_tile).convert(color_mode)
 
     # Write image out
     mosaic_image.save(output_filename, 'jpeg')
@@ -195,10 +193,10 @@ def generate_mosaic_photo(target_image, tiles_path, grid_size, scale=3, duplicat
 # ======================================================================================================================
 
 if __name__ == '__main__':
-    generate_mosaic_photo(target_image='../data/Sample.jpg',
+    generate_mosaic_photo(target_image='../data/Face.jpg',
                           tiles_path='../data/Face/',
                           output_filename='Result.jpg',
                           scale=5,
-                          grid_size=(100, 100),
+                          grid_size=(150, 150),
                           duplicated_tile=True,
                           color_mode='RGB')

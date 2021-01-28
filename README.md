@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
 ```python
 if __name__ == '__main__':
-    generate_mosaic_photo(target_image='../data/Sample.jpg',
+    generate_mosaic_photo(target_image='../data/Face.jpg',
                           tiles_path='../data/Face/',
                           output_filename='Result.jpg',
                           scale=5,
