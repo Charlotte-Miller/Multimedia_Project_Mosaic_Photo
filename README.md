@@ -50,7 +50,7 @@ Explain:
 
 3. Execute Mosaic_Photo_Generator.py
 
-## Reuslt
+## Result
 Click in the image then zoom out to check out its tile images
 
 ![alt text](https://github.com/Charlotte-Miller/Multimedia_Project_Mosaic_Photo/blob/master/scripts/Result.jpg?raw=true)
