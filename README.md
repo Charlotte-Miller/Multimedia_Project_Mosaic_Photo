@@ -9,7 +9,7 @@ Python version: 3.8.7
 
 PIP version: 21.0
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install following packages.
 
 ```bash
 python3 -m pip install --upgrade pip
