@@ -13,4 +13,4 @@ def convert_tile_extension_to_jpg(directory_path):
 
 
 if __name__ == '__main__':
-    convert_tile_extension_to_jpg(directory_path='../data/Face/')
+    convert_tile_extension_to_jpg(directory_path='../Assets/Face/')
